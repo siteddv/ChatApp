@@ -10,19 +10,20 @@ public class CreateUserCommand : IRequest<UserDto>
     public string Nickname { get; set; } = string.Empty;
 }
 
-public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserDto>
+public class CreateUserCommandHandler(IChatDbContext context) : IRequestHandler<CreateUserCommand, UserDto>
 {
-    private readonly IUserRepository _userRepository;
-
-    public CreateUserCommandHandler(IUserRepository userRepository)
-    {
-        _userRepository = userRepository;
-    }
-
     public async Task<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        var user = new UserDto() { Nickname = request.Nickname };
-        await _userRepository.AddAsync(user);
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Nickname = request.Nickname,
+            CreatedAt = DateTime.Now
+        };
+        
+        context.Users.Add(user);
+        await context.SaveChangesAsync(cancellationToken);
+        
         return new UserDto { Id = user.Id, Nickname = user.Nickname };
     }
 }

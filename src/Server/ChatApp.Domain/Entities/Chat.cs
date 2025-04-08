@@ -2,11 +2,10 @@ using ChatApp.Domain.Common.Enums;
 
 namespace ChatApp.Domain.Entities;
 
-public class Chat
+public class Chat : BaseEntity
 {
-    public Guid Id { get; set; }
     public ChatType Type { get; set; }
-    public Guid? GroupId { get; set; }
-    public ICollection<User> Participants { get; set; } = new List<User>();
+    public string? Name { get; set; }
+    public ICollection<ChatUser> Participants { get; set; } = new List<ChatUser>();
     public ICollection<Message> Messages { get; set; } = new List<Message>();
 }

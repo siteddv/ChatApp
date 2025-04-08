@@ -1,5 +1,7 @@
 using ChatApp.Application.Dtos;
 using ChatApp.Application.Interfaces;
+using ChatApp.Domain.Common.Enums;
+using ChatApp.Domain.Entities;
 using MediatR;
 
 namespace ChatApp.Application.Mediatr.Commands;
@@ -10,24 +12,36 @@ public class CreatePersonalChatCommand : IRequest<ChatDto>
     public Guid UserId2 { get; set; }
 }
 
-public class CreatePersonalChatCommandHandler : IRequestHandler<CreatePersonalChatCommand, ChatDto>
+public class CreatePersonalChatCommandHandler(IChatDbContext context)
+    : IRequestHandler<CreatePersonalChatCommand, ChatDto>
 {
-    private readonly IChatRepository _chatRepository;
-
-    public CreatePersonalChatCommandHandler(IChatRepository chatRepository)
-    {
-        _chatRepository = chatRepository;
-    }
-
     public async Task<ChatDto> Handle(CreatePersonalChatCommand command, CancellationToken cancellationToken)
     {
-        var chat = await _chatRepository.CreateAsync(command);
-        return new ChatDto
+        var chat = new Chat
         {
-            Id = chat.Id,
-            Type = chat.Type,
-            GroupId = chat.GroupId,
-            Participants = new List<UserDto>()
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.Now,
+            Type = ChatType.Personal
         };
+        await context.Chats.AddAsync(chat, cancellationToken).ConfigureAwait(false);
+
+        var chatUsers = new List<ChatUser>()
+        {
+            new()
+            {
+                ChatId = chat.Id,
+                UserId = command.UserId1
+            },
+            new()
+            {
+                ChatId = chat.Id,
+                UserId = command.UserId2
+            }
+        };
+        
+        await context.ChatUsers.AddRangeAsync(chatUsers, cancellationToken).ConfigureAwait(false);
+        await context.SaveChangesAsync(cancellationToken);
+        
+        return new ChatDto { Id = chat.Id, Type = chat.Type };
     }
 }
